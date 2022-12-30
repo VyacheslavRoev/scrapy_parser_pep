@@ -8,29 +8,25 @@ BASE_DIR = Path(__file__).parent.parent
 
 
 class PepParsePipeline:
-    pep_status_count = defaultdict(int)
-    total_pep_count = 0
-
     def open_spider(self, spider):
-        result_dir = BASE_DIR / 'results'
-        result_dir.mkdir(exist_ok=True)
+        self.counter = defaultdict(int)
 
     def process_item(self, item, spider):
-        if item.get('status'):
-            self.total_pep_count += 1
-            self.pep_status_count[
-                item['status']] = self.pep_status_count.get(
-                    item['status'], 0) + 1
+        self.counter[''.join(item['status'])] += 1
         return item
 
     def close_spider(self, spider):
-        results = [('Статус', 'Количество')]
-        results.extend(self.pep_status_count.items())
-        results.append(('Total:', self.total_pep_count))
-        file_format = dt.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        file_name = f'status_summary_{file_format}.csv'
-        file_path = BASE_DIR / 'results' / file_name
-
-        with open(file_path, 'w', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerows(results)
+        results_dir = BASE_DIR / "results"
+        results_dir.mkdir(exist_ok=True)
+        now = dt.datetime.now()
+        now_formatted = now.strftime("%Y-%m%dT%H-%M-%S")
+        file_name = f"status_summary_{now_formatted}.csv"
+        file_path = results_dir / file_name
+        result = [("Статус", "Количество")]
+        result.extend(self.counter.items())
+        total = sum(self.counter.values())
+        result.append(("Total", total))
+        with open(file_path, "w", encoding="utf-8") as f:
+            writer = csv.writer(f, dialect='unix')
+            writer.writerows(result)
+        self.counter.clear()
