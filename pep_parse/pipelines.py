@@ -1,10 +1,7 @@
 import csv
-import datetime as dt
 from collections import defaultdict
-from pathlib import Path
-
-
-BASE_DIR = Path(__file__).parent.parent
+from .settings import BASE_DIR
+from .utils import now_formatted
 
 
 class PepParsePipeline:
@@ -17,16 +14,26 @@ class PepParsePipeline:
 
     def close_spider(self, spider):
         results_dir = BASE_DIR / "results"
-        results_dir.mkdir(exist_ok=True)
-        now = dt.datetime.now()
-        now_formatted = now.strftime("%Y-%m%dT%H-%M-%S")
+        try:
+            results_dir.mkdir(exist_ok=True)
+        except FileExistsError:
+            print('Невозможно создать папку')
         file_name = f"status_summary_{now_formatted}.csv"
         file_path = results_dir / file_name
         result = [("Статус", "Количество")]
-        result.extend(self.counter.items())
+        try:
+            result.extend(self.counter.items())
+        except Exception:
+            print('Не найдены статусы PEP')
         total = sum(self.counter.values())
-        result.append(("Total", total))
-        with open(file_path, "w", encoding="utf-8") as f:
-            writer = csv.writer(f, dialect='unix')
-            writer.writerows(result)
+        try:
+            result.append(("Total", total))
+        except Exception:
+            print('Невозможно посчитать общее количество статусов')
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                writer = csv.writer(f, dialect='unix')
+                writer.writerows(result)
+        except FileNotFoundError:
+            print('Файл не создан')
         self.counter.clear()
