@@ -1,5 +1,6 @@
 import csv
 from collections import defaultdict
+
 from .settings import BASE_DIR
 from .utils import now_formatted
 
